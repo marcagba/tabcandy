@@ -24,6 +24,7 @@
     z-index: 0;
     width: 160px;
     height: 137px;
+    overflow: hidden;
   }
     
   .fav{
@@ -88,14 +89,15 @@
     right: 2px;
   }      
       
-  .search{width:100%; margin-top: 30px; text-align: center; margin-bottom: 30px;}
-  .search input{ width: 300px; font-size: 16pt;}
-
   #actions{
    position: absolute;
    top: 5px;
    right: 5px;
    font-size: 11px;
+  }
+  
+  .action { 
+    margin: 5px;
   }
   
   .unhighlight{
@@ -136,29 +138,38 @@
 </head>
 
 <body>
-  <div class="search">
-    <input type="text"/>
-  </div>
-  <div id="actions">
-    <a id="tabbar" href="#">Toggle Tab Bar</a>
+  <div id="nav">
+    <div id="actions">
+      <a id="tabbar" class="action" href="#">Toggle Tab Bar</a>
+    </div>
   </div>
   
+  <script type="text/javascript;version=1.8">
+  </script>
+
+  <script type="text/javascript;version=1.8" src="../../js/optional/stacktrace.js"></script>
   <script type="text/javascript;version=1.8" src="../../js/core/jquery.js"></script>  
   <script type="text/javascript;version=1.8" src="../../js/optional/jquery-ui.js"></script>  
   <script type="text/javascript;version=1.8" src="../../js/core/utils.js"></script>  
+  <script type="text/javascript;version=1.8">
+  	Utils.log('it begins');
+/*     Utils.testLogging(); */
+  </script>
   <script type="text/javascript;version=1.8" src="../../js/core/tabs.js"></script>
   <script type="text/javascript;version=1.8" src="../../js/core/mirror.js"></script>
   <script type="text/javascript;version=1.8" src="js/ui.js"></script>  
 
-  <script type="text/javascript;version=1.8"
-  src="../zoomgroups/js/groups.js"></script>
+  <script type="text/javascript;version=1.8" src="../zoomgroups/js/groups.js"></script>
   
   <!-- BEGIN Switch Control -->
   <script type="text/javascript;version=1.8" src="../../js/optional/switch.js"></script>  
   <script type="text/javascript;version=1.8">
-    Switch.insert('body', '');
+    Switch.insert('#nav', '');
   </script>
   <!-- END Switch Control -->
+
+  <script type="text/javascript;version=1.8">
+  </script>
 
 </body>
 </html>
