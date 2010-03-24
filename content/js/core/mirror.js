@@ -105,6 +105,81 @@ TabCanvas.prototype = {
 }
 
 // ----------
+function Mirror(tab, manager) {
+  this.tab = tab;
+  this.manager = manager;
+  
+  var div = $("<div class='tab'><span class='name'>&nbsp;</span><img class='fav'/><canvas class='thumb'/></div>")
+    .data("tab", this.tab)
+    .appendTo("body");
+    
+  if( this.tab.url.match("chrome:") )
+    div.hide();
+  
+  this.manager._customize(div);
+  
+  this.needsPaint = 0;
+  this.canvasSizeForced = false;
+  this.el = div.get(0);
+  this.favEl = $('.fav', div).get(0);
+  this.nameEl = $('.name', div).get(0);
+  this.canvasEl = $('.thumb', div).get(0);
+  this.onCloseSubscribers = [];
+      
+  var doc = this.tab.contentDocument;
+  if( !_isIframe(doc) ) {
+    this.tabCanvas = new TabCanvas(this.tab, this.canvasEl);    
+    this.tabCanvas.attach();
+    this.triggerPaint();
+  }
+}
+
+Mirror.prototype.triggerPaint = function() {
+	var date = new Date();
+	this.needsPaint = date.getTime();
+};
+
+Mirror.prototype.forceCanvasSize = function(w, h) {
+  this.canvasSizeForced = true;
+  var $canvas = $(this.canvasEl);
+  $canvas.attr('width', w);
+  $canvas.attr('height', h);
+  this.tabCanvas.paint();
+};
+
+Mirror.prototype.unforceCanvasSize = function() {
+  this.canvasSizeForced = false;
+};
+
+Mirror.prototype.addOnClose = function(referenceElement, callback) {
+  var existing = jQuery.grep(this.onCloseSubscribers, function(element) {
+    return element.referenceElement == referenceElement;
+  });
+  
+  if(existing.size) {
+    Utils.assert('should only ever be one', existing.size == 1);
+    existing[0].callback = callback;
+  } else {  
+    this.onCloseSubscribers.push({
+      referenceElement: referenceElement, 
+      callback: callback
+    });
+  }
+};
+
+Mirror.prototype.removeOnClose = function(referenceElement) {
+  this.onCloseSubscribers = jQuery.grep(this.onCloseSubscribers, function(element) {
+    return element.referenceElement == referenceElement;
+  }, true);
+};
+
+Mirror.prototype._sendOnClose = function() {
+  jQuery.each(this.onCloseSubscribers, function(index, object) { 
+    object.callback(this);
+  });
+};
+
+// ----------
 var TabMirror = function( ){ this.init() }
 TabMirror.prototype = {
   init: function(){
@@ -163,14 +238,16 @@ TabMirror.prototype = {
             mirror.triggerPaint();
           }
           
-          var w = $canvas.width();
-          var h = $canvas.height();
-          if(w != $canvas.attr('width') || h != $canvas.attr('height')) {
-            $canvas.attr('width', w);
-            $canvas.attr('height', h);
-            mirror.triggerPaint();
+          if(!mirror.canvasSizeForced) {
+            var w = $canvas.width();
+            var h = $canvas.height();
+            if(w != $canvas.attr('width') || h != $canvas.attr('height')) {
+              $canvas.attr('width', w);
+              $canvas.attr('height', h);
+              mirror.triggerPaint();
+            }
           }
-
+          
           if(mirror.needsPaint) {
             mirror.tabCanvas.paint();
             
@@ -199,33 +276,7 @@ TabMirror.prototype = {
   },
   
   _createEl: function(tab){
-    var div = $("<div class='tab'><span class='name'>&nbsp;</span><img class='fav'/><canvas class='thumb'/></div>")
-      .data("tab", tab)
-      .appendTo("body");
-      
-    if( tab.url.match("chrome:") )
-      div.hide();
-    
-    this._customize(div);
-    
-    tab.mirror = {}; 
-    tab.mirror.needsPaint = 0;
-    tab.mirror.el = div.get(0);
-    tab.mirror.favEl = $('.fav', div).get(0);
-    tab.mirror.nameEl = $('.name', div).get(0);
-    tab.mirror.canvasEl = $('.thumb', div).get(0);
-    
-    tab.mirror.triggerPaint = function() {
-    	var date = new Date();
-    	this.needsPaint = date.getTime();
-    };
-    
-    var doc = tab.contentDocument;
-    if( !_isIframe(doc) ) {
-      tab.mirror.tabCanvas = new TabCanvas(tab, tab.mirror.canvasEl);    
-      tab.mirror.tabCanvas.attach();
-      tab.mirror.triggerPaint();
-    }
+    tab.mirror = new Mirror(tab, this);
   },
   
   update: function(tab){
@@ -252,6 +303,7 @@ TabMirror.prototype = {
   unlink: function(tab){
     var mirror = tab.mirror;
     if(mirror) {
+      mirror._sendOnClose();
       var tabCanvas = mirror.tabCanvas;
       if(tabCanvas)
         tabCanvas.detach();
