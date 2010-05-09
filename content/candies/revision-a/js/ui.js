@@ -99,8 +99,8 @@ var Tabbar = {
   },
   
   // ----------
-  // Function: getVisibleTabs
-  // Hides all of the tabs which are not passed into this function.
+  // Function: showOnlyTheseTabs
+  // Hides all of the tabs in the tab bar which are not passed into this function.
   //
   // Paramaters
   //  - An array of <Tab> objects.
@@ -167,14 +167,14 @@ window.Page = {
       var group = Groups.getActiveGroup();
       if( group && group._children.length == 0 )
         Page.show();
-      
+
       // Take care of the case where you've closed the last tab in
       // an un-named group, which means that the group is gone (null) and
       // there are no visible tabs.
       if( group == null && Tabbar.getVisibleTabs().length == 0){
         Page.show();
       }
-      
+
       return false;
     });
         
@@ -394,7 +394,7 @@ UIClass.prototype = {
     itemBounds.width = 1;
     itemBounds.height = 1;
     $.each(items, function(index, item) {
-      if(item.locked)
+      if(item.locked.bounds)
         return;
         
       var bounds = item.getBounds();
@@ -423,8 +423,9 @@ UIClass.prototype = {
     
     var scale = Math.min(hScale, wScale);
     var self = this;
+    var pairs = [];
     $.each(items, function(index, item) {
-      if(item.locked)
+      if(item.locked.bounds)
         return;
         
       var bounds = item.getBounds();
@@ -437,9 +438,18 @@ UIClass.prototype = {
       bounds.top *= scale;
       bounds.height *= scale;
       
-      item.setBounds(bounds, true);
+      pairs.push({
+        item: item,
+        bounds: bounds
+      });
     });
     
+    Items.unsquish(pairs);
+    
+    $.each(pairs, function(index, pair) {
+      pair.item.setBounds(pair.bounds, true);
+    });
+
     this.pageBounds = Items.getPageBounds();
   },
   
