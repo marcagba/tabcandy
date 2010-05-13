@@ -60,8 +60,14 @@ var Tabbar = {
   // so we still have access to that information during the window's unload event,
   // when window.Tabs no longer exists.
   _hidden: false, 
+  
+  // ----------
   get el(){ return window.Tabs[0].raw.parentNode; },
+
+  // ----------
   height: window.Tabs[0].raw.parentNode.getBoundingClientRect().height,
+
+  // ----------
   hide: function(animate) {
     var self = this;
     this._hidden = true;
@@ -73,14 +79,18 @@ var Tabbar = {
       self.el.collapsed = true;
     });
   },
+
+  // ----------
   show: function(animate) {
     this._hidden = false;
-
-    if( animate == false ) speed = 0;
-    else speed = 150;
-        
     this.el.collapsed = false;
-    $(this.el).animate({"marginTop":0}, speed);
+    
+    if(animate == false) {
+      $(this.el).css({"marginTop":0});
+    } else {
+      var speed = 150;
+      $(this.el).animate({"marginTop":0}, speed);
+    }
   },
   
   // ----------
@@ -135,8 +145,19 @@ var Tabbar = {
       tab.collapsed = false;
       Utils.activeWindow.gBrowser.moveTabTo(tab, UI.tabBar.el.children.length-1);
     });
-    
   },
+
+  // ----------
+  // Function: showAllTabs
+  // Shows all of the tabs in the tab bar.
+  showAllTabs: function(){
+    for( var i=0; i<UI.tabBar.el.children.length; i++ ){
+      var tab = UI.tabBar.el.children[i];
+      tab.collapsed = false;
+    }
+  },
+
+  // ----------
   get isHidden(){ return this._hidden; }
 }
 
@@ -356,9 +377,24 @@ window.Page = {
   //  - Takes a <TabItem>
   //
   setActiveTab: function(tab){
-    if( this._activeTab ) this._activeTab.makeDeactive();
+    if(tab == this._activeTab)
+      return;
+      
+    if(this._activeTab) { 
+      this._activeTab.makeDeactive();
+      this._activeTab.removeOnClose(this);
+    }
+      
     this._activeTab = tab;
-    tab.makeActive();
+    
+    if(this._activeTab) {
+      var self = this;
+      this._activeTab.addOnClose(this, function() {
+        self._activeTab = null;
+      });
+
+      this._activeTab.makeActive();
+    }
   },
   
   // ----------
@@ -389,7 +425,7 @@ function UIClass(){
   this.navBar = Navbar;
   this.tabBar = Tabbar;
   this.devMode = false;
-  this.focused = true;
+  this.focused = (Utils.activeTab == Utils.homeTab);
   
   var self = this;
   
@@ -409,7 +445,10 @@ function UIClass(){
   }
   
   // ___ Navbar
-  this.navBar.hide();
+  if(this.focused) {
+    this.tabBar.hide();
+    this.navBar.hide();
+  }
   
   Tabs.onFocus(function() {
     try{
@@ -450,6 +489,9 @@ function UIClass(){
   $(window).bind('beforeunload', function() {
     if(self.initialized) 
       self.save();
+      
+    self.tabBar.show();    
+    self.tabBar.showAllTabs();
   });
   
   // ___ resizing
