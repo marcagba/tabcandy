@@ -1,0 +1,3 @@
+The main elements of Revision A are tabs and groups, represented internally with the TabItem and Group classes, both of which are descended from the Item class. To help out with the individual items there are also singleton objects for managing them all, called TabItems, Groups, and Items, respectively.
+
+An Item, whether it's a TabItem or a Group, keeps track of its bounds on screen internally, and updates various elements on the DOM to depict its location on screen. In the future we may support a fully canvas-based display, or a webGL display; the internal representation will remain the same, but it'll no longer be displayed via DOM elements.
